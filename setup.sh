@@ -128,7 +128,8 @@ if confirm "Create a seperate Proxmox admin user?" "N"; then
     read -p "  Admin username: " username
     password="$(get_password)"
     read -p "  email address: " email
-    add_admin_user "$username" "$password" "$email"
+    read -p "  realm (pve or pam): " realm
+    add_admin_user "$username" "$password" "$email" "$realm"
 fi
 
 if [ $(pveum user list --enabled --output-format yaml | grep 'userid: ' | wc -l) -gt 1 ] \
