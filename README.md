@@ -7,6 +7,6 @@ for others.
 Initial Setup (this should be run as root):
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/rodneyshupe/proxmox-scripts/main/setup.sh --output setup.sh
+wget https://raw.githubusercontent.com/rodneyshupe/proxmox-scripts/main/setup.sh --output-document=setup.sh
 sudo bash setup.sh
 ```
