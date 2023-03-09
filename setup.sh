@@ -88,6 +88,7 @@ function add_admin_user() {
     local user="$1"
     local password="$2"
     local email="$3"
+    local realm="${4:-pve}"
 
     if [ -z "$user" ] || [ -z "$password" ] || [ -z "$email" ]; then
         echo -n "ERROR: add_admin_user Missing parameter: "
@@ -95,15 +96,30 @@ function add_admin_user() {
         [ -z "$password" ] && echo -n "password "
         [ -z "$email" ] && echo -n "email"
         echo
+    elif [[ "$realm" != "pve" ]] && [[ "$realm" != "pam" ]]; then
+        echo "ERROR: supported realm: $realm"
     else
-        echo "Add admin user $user"
-        pveum user add $user -comment "Admin User" \
-        && pvesh set /access/password --userid "$user" --password "$password"
+        echo "Add admin user $user@$realm"
+        if [[ "$realm" == "pam" ]]; then
+            apt install -y -q -q sudo >/dev/null
+            getent group sudo > /dev/null
+            if [ $? -ne 0 ] ; then
+                sudo su -c "groupadd sudo"
+            fi
+            sudo su -c "useradd $user --shell /bin/bash --create-home --groups sudo"
+            echo $user:$password | sudo chpasswd
+        fi
+        pveum user add $user@$realm -comment "Admin User"
+        if [ $? -eq 0 ] && [[ "$realm" == "pve" ]]; then
+            pvesh set /access/password --userid "$user" --password "$password"
+        fi
 
-        pveum user modify $user -email "$email"
-        pveum user modify $user -group admin
+        pveum user modify $user@$realm -email "$email"
+        pveum user modify $user@$realm -group admin
     fi
 }
+
+
 
 pveum group add admin -comment "System Administrators"
 pveum acl modify / -group admin -role Administrator
@@ -128,5 +144,6 @@ if confirm "Do you have a Proxmox subscription?" "N"; then
 fi
 
 if confirm "Setup GPU passthrough?" "N"; then
+    apt install -y -q -q curl >/dev/null
     curl -sSL https://raw.githubusercontent.com/rodneyshupe/dark-browser/main/setup-gpu-passthrough.sh | bash
 fi
